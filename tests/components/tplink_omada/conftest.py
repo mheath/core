@@ -4,7 +4,9 @@ import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from tplink_omada_client.definitions import PoEMode
 from tplink_omada_client.devices import OmadaSwitch, OmadaSwitchPortDetails
+from tplink_omada_client.omadasiteclient import SwitchPortOverrides
 
 from homeassistant.components.tplink_omada.config_flow import CONF_SITE
 from homeassistant.components.tplink_omada.const import DOMAIN
@@ -53,6 +55,16 @@ def mock_omada_site_client() -> Generator[AsyncMock, None, None]:
     )
     switch1_ports = [OmadaSwitchPortDetails(p) for p in switch1_ports_data]
     site_client.get_switch_ports.return_value = switch1_ports
+
+    async def mock_update_switch_port(
+        s, spd: OmadaSwitchPortDetails, overrides: SwitchPortOverrides
+    ) -> OmadaSwitchPortDetails:
+        spd.raw_data["poe"] = (
+            PoEMode.ENABLED if overrides.enable_poe else PoEMode.DISABLED
+        )
+        return spd
+
+    site_client.update_switch_port.side_effect = mock_update_switch_port
 
     return site_client
 
